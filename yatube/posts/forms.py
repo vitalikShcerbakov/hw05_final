@@ -17,7 +17,6 @@ class PostForm(forms.ModelForm):
             'group': 'Выберите группу',
             'text': 'Введите ссообщение'
         }
-        fields = ('text', 'group')
         fields = ('group', 'text', 'image')
 
 
