@@ -25,7 +25,7 @@
           Автор: {{ one_post.author }}
         </li>
         <li>
-          Всего постов автора:  <span >{{ count_post }}</span>
+          Всего постов автора:  <span >{{ one_post.author.posts.count }}</span>
         </li>
         <li>
           <a href="{% url 'posts:profile' one_post.author %}">

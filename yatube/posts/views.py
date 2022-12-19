@@ -1,12 +1,11 @@
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import cache_page
 
 from .forms import CommentForm, PostForm
-from .models import Comment, Follow, Group, Post, User
+from .models import Follow, Group, Post, User
 from .utils import get_paginator
+
 
 @cache_page(20, key_prefix='index_page')
 def index(request):
@@ -52,15 +51,11 @@ def post_detail(request, post_id):
     form = CommentForm()
     is_edit = False
     one_post = get_object_or_404(Post, pk=post_id)
-    #comments = Comment.objects.filter(post=post_id)
     comments = one_post.comments.all()
     if one_post.author == request.user:
         is_edit = True
-    count_post = Post.objects.select_related('author').filter(
-        author=one_post.author).count()
     context = {
         'one_post': one_post,
-        'count_post': count_post,
         'is_edit': is_edit,
         'form': form,
         'comments': comments,
@@ -70,7 +65,6 @@ def post_detail(request, post_id):
 
 @login_required
 def post_create(request):
-    template_name = 'posts/create_post.html'
     form = PostForm(
         request.POST or None,
         files=request.FILES or None,
@@ -81,12 +75,11 @@ def post_create(request):
             post.author = request.user
             post.save()
             return redirect('posts:profile', request.user)
-    return render(request, template_name, {'form': form})
+    return render(request, 'posts/create_post.html', {'form': form})
 
 
 @login_required
 def post_edit(request, post_id):
-    template_name = 'posts/create_post.html'
     post = get_object_or_404(Post, pk=post_id)
     if post.author != request.user:
         return redirect('posts:post_detail', post.pk)
@@ -99,8 +92,11 @@ def post_edit(request, post_id):
         post = form.save(commit=False)
         post.author = request.user
         post.save()
+        # Зачем здесь return?)
+        # Для перенаправления на cтраницу поста после сохранения
+        # Не пойму замечания... =(
         return redirect('posts:post_detail', post_id=post_id)
-    return render(request, template_name, {
+    return render(request, 'posts/create_post.html', {
         'form': form,
         'is_edit': is_edit,
         'post': post,
@@ -122,9 +118,7 @@ def add_comment(request, post_id):
 @login_required
 def follow_index(request):
     post_list = Post.objects.filter(author__following__user=request.user)
-    paginator = Paginator(post_list, settings.AMOUNT_OF_POSTS_TO_DISPLAY)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj = get_paginator(post_list, request)
     context = {
         'page_obj': page_obj,
     }
@@ -134,10 +128,10 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    if (
-        Follow.objects.filter(author=author, user=request.user).exists()
-            or request.user == author
-    ):
+    if (Follow.objects.filter(
+        author=author,
+        user=request.user
+    ).exists() or request.user == author):
         return redirect('posts:profile', username=username)
     Follow.objects.create(author=author, user=request.user)
     return redirect('posts:profile', username=username)
@@ -146,6 +140,8 @@ def profile_follow(request, username):
 @login_required
 def profile_unfollow(request, username):
     author = User.objects.get(username=username)
-    record = Follow.objects.filter(author=author).filter(user=request.user)
-    record.delete()
+    # Понимаю что проверка так себе но умнее не чего не придумал...(
+    if Follow.objects.filter(author=author).filter(user=request.user).exists():
+        record = Follow.objects.filter(author=author).filter(user=request.user)
+        record.delete()
     return redirect('posts:follow_index')
