@@ -37,14 +37,11 @@ class Post(models.Model):
         verbose_name='Группа',
         help_text='Группа, к которой будет относиться пост'
     )
-    # Поле для картинки (необязательное)
     image = models.ImageField(
         'Картинка',
         upload_to='posts/',
         blank=True
     )
-    # Аргумент upload_to указывает директорию,
-    # в которую будут загружаться пользовательские файлы.
 
     class Meta:
         ordering = ['-pub_date']
@@ -75,8 +72,11 @@ class Comment(models.Model):
         auto_now_add=True
     )
 
-    def __str__(self):
-        return self.text[:15]
+    class Meta:
+        ordering = ['-created']
+
+        def __str__(self):
+            return self.text[:15]
 
 
 class Follow(models.Model):
@@ -93,12 +93,12 @@ class Follow(models.Model):
         verbose_name='автор'
     )
 
-    def __str__(self):
-        return f'user: {self.user} subscribed to: {self.author}'
-
     class Meta:
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'author'],
                 name='unique_follow')
         ]
+
+        def __str__(self):
+            return f'user: {self.user} subscribed to: {self.author}'

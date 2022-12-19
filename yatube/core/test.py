@@ -7,6 +7,6 @@ class CastomPageURLTests(TestCase):
         super().setUpClass()
 
     def test_urls_uses_correct_template(self):
-        """URL-адрес использует соответствующий шаблон."""
+        """The URL uses the appropriate pattern."""
         response = self.client.get('unexisting')
         self.assertTemplateUsed(response, 'core/404.html')

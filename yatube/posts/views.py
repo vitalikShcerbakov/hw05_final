@@ -6,14 +6,12 @@ from django.views.decorators.cache import cache_page
 
 from .forms import CommentForm, PostForm
 from .models import Comment, Follow, Group, Post, User
-
+from .utils import get_paginator
 
 @cache_page(20, key_prefix='index_page')
 def index(request):
     post_list = Post.objects.select_related().all()
-    paginator = Paginator(post_list, settings.AMOUNT_OF_POSTS_TO_DISPLAY)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj = get_paginator(post_list, request)
     context = {
         'page_obj': page_obj,
     }
@@ -23,9 +21,7 @@ def index(request):
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
     posts_list = group.posts.all()
-    paginator = Paginator(posts_list, settings.AMOUNT_OF_POSTS_TO_DISPLAY)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj = get_paginator(posts_list, request)
     context = {
         'group': group,
         'page_obj': page_obj,
@@ -36,9 +32,7 @@ def group_posts(request, slug):
 def profile(request, username):
     user_obj = get_object_or_404(User, username=username)
     all_post_user = user_obj.posts.all()
-    paginator = Paginator(all_post_user, settings.AMOUNT_OF_POSTS_TO_DISPLAY)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj = get_paginator(all_post_user, request)
     number_of_subscribers = Follow.objects.filter(author=user_obj).count()
     following = (
         request.user.is_authenticated
@@ -58,7 +52,8 @@ def post_detail(request, post_id):
     form = CommentForm()
     is_edit = False
     one_post = get_object_or_404(Post, pk=post_id)
-    comments = Comment.objects.filter(post=post_id)
+    #comments = Comment.objects.filter(post=post_id)
+    comments = one_post.comments.all()
     if one_post.author == request.user:
         is_edit = True
     count_post = Post.objects.select_related('author').filter(
