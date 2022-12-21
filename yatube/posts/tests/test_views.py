@@ -9,58 +9,40 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from posts.models import Comment, Follow, Group, Post, User
+from .conftest import ConfTests
 
-TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
-
-@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
-class PostsPagesTests(TestCase):
-    COUNT_POST = 20
+class PostsPagesTests(ConfTests, TestCase):
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username='Guido')
-        cls.group = Group.objects.create(
-            title='Тестовый заголовок',
-            slug='test-slug',
-            description='Тестовый текст',
-        )
-        cls.small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x02\x00'
-            b'\x01\x00\x80\x00\x00\x00\x00\x00'
-            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-            b'\x0A\x00\x3B'
-        )
-        uploaded = SimpleUploadedFile(
-            name='small.gif',
-            content=cls.small_gif,
-            content_type='image/gif'
-        )
+        # cls.user = User.objects.create_user(username='Guido')
+        # cls.group = Group.objects.create(
+        #     title='Тестовый заголовок',
+        #     slug='test-slug',
+        #     description='Тестовый текст',
+        # )
+
         cls.list_post = [Post.objects.create(
             text='тестовый текст поля text',
             author=cls.user,
             group=cls.group,
-            image=uploaded
+            image=cls.uploaded
         )for _ in range(cls.COUNT_POST)]
 
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+
 
     def setUp(self):
         cache.clear()
         self.expected_post_list = list(
             Post.objects.all()[:settings.AMOUNT_OF_POSTS_TO_DISPLAY])
-        self.user = User.objects.get(username='Guido')
+        self.user = User.objects.get(username='auth')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
     def test_pages_uses_correct_template(self):
-        """URL-адрес использует соответствующий шаблон."""
+        """The URL uses the appropriate pattern."""
         post = self.list_post[0]
         templates_pages_names = {
             reverse('posts:index'): 'posts/index.html',
@@ -97,14 +79,14 @@ class PostsPagesTests(TestCase):
             self.assertEqual(pst.image, post.image)
 
     def test_displaying_posts_from_the_main_page(self):
-        """Проверяет, что шаблон index содержит список постов."""
+        """Checks that the index template contains a list of posts."""
         response = self.authorized_client.get(reverse('posts:index'))
         obj_list = response.context['page_obj']
         self.reconciliation_of_posts_by_fields(obj_list)
         self.assertEqual(list(obj_list), self.expected_post_list)
 
     def test_output_of_posts_filtered_by_group(self):
-        """Проверяет, что шаблон group_list содержит список постов."""
+        """Checks that the group_lsit template contains a list of posts."""
         response = self.authorized_client.get(reverse(
             'posts:group_list', kwargs={'slug': f'{self.group.slug}'}))
         obj_list = response.context['page_obj']
@@ -112,7 +94,7 @@ class PostsPagesTests(TestCase):
         self.assertEqual(list(obj_list), self.expected_post_list)
 
     def test_displaying_posts_filtered_by_user(self):
-        """Проверяет, что шаблон profile содержит список постов."""
+        """Checks that the profile template contains a list of posts."""
         response = self.authorized_client.get(reverse(
             'posts:profile', kwargs={'username': self.user}))
         obj_list = response.context['page_obj']
@@ -120,7 +102,7 @@ class PostsPagesTests(TestCase):
         self.assertEqual(list(obj_list), self.expected_post_list)
 
     def test_output_of_one_post_filtered_by_id(self):
-        """Проверяет, что шаблон post_detail содержит пост."""
+        """Checks that the post_detail template contains a list of posts."""
         one_post_id = self.list_post[0].id
         response = self.authorized_client.get(reverse(
             'posts:post_detail', kwargs={'post_id': one_post_id}))
@@ -143,7 +125,7 @@ class PostsPagesTests(TestCase):
                 self.assertIsInstance(form_field, expected)
 
     def test_edit_post_page_show_correct_context_filtered_by_id(self):
-        """Проверяет, что шаблон post_edit cодержит форму."""
+        """Checks that the post_edit template contains a form."""
         one_post_id = self.list_post[0].id
         response = self.authorized_client.get(
             reverse('posts:post_edit', kwargs={'post_id': one_post_id})
@@ -151,7 +133,7 @@ class PostsPagesTests(TestCase):
         self._test_forms(response)
 
     def test_create_post_single_post(self):
-        """Проверяет, что шаблон create_post cодержит форму."""
+        """Checks that the creat_post template contains a form.."""
         response = self.authorized_client.get(reverse('posts:post_create'))
         self._test_forms(response)
 
@@ -169,18 +151,18 @@ class PostsPagesTests(TestCase):
         self.assertNotEqual(before_content, after_deleting_cache)
 
 
-class PaginatorViewsTest(TestCase):
+class PaginatorViewsTest(ConfTests, TestCase):
     COUNT_POST = 13
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username='Guido')
-        cls.group = Group.objects.create(
-            title='Тестовый заголовок',
-            slug='test-slug',
-            description='Тестовый текст',
-        )
+        #cls.user = User.objects.create_user(username='Guido')
+        # cls.group = Group.objects.create(
+        #     title='Тестовый заголовок',
+        #     slug='test-slug',
+        #     description='Тестовый текст',
+        # )
         for i in range(cls.COUNT_POST):
             Post.objects.create(
                 text='тестовый текст поля text',
@@ -190,7 +172,7 @@ class PaginatorViewsTest(TestCase):
 
     def setUp(self):
         cache.clear()
-        self.user = User.objects.get(username='Guido')
+        #self.user = User.objects.get(username='Guido')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
@@ -215,23 +197,7 @@ class PaginatorViewsTest(TestCase):
                 self.COUNT_POST - settings.AMOUNT_OF_POSTS_TO_DISPLAY)
 
 
-class CommentsTest(TestCase):
-    new_comment = 'new comment'
-    comment = 'text new comment'
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.user = User.objects.create_user(username='Guido')
-        cls.post = Post.objects.create(
-            text='текст для теста',
-            author=cls.user
-        )
-        cls.comment = Comment.objects.create(
-            post=cls.post,
-            author=cls.user,
-            text=cls.comment
-        )
+class CommentsTest(ConfTests, TestCase):
 
     def setUp(self):
         cache.clear()
@@ -242,59 +208,43 @@ class CommentsTest(TestCase):
         count_comment = Comment.objects.all().count()
         self.authorized_client.post(
             reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
-            data={'text': self.new_comment}
+            data={'text': self.NEW_COMMENT}
         )
         self.client.post(
             reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
-            data={'text': self.new_comment}
+            data={'text': self.NEW_COMMENT}
         )
         self.assertEqual(Comment.objects.count(), count_comment + 1)
-        self.assertTrue(Comment.objects.filter(text=self.new_comment).exists())
+        self.assertTrue(Comment.objects.filter(text=self.NEW_COMMENT).exists())
 
     def test_comment_appears_on_post_page(self):
         self.authorized_client.post(
             reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
-            data={'text': self.new_comment}
+            data={'text': self.NEW_COMMENT}
         )
         response = self.authorized_client.get(
             reverse('posts:post_detail', kwargs={'post_id': self.post.id})
         )
         obj_comment = response.context['comments'][1]
-        expected_comment = Comment.objects.get(text=self.new_comment)
+        expected_comment = Comment.objects.get(text=self.NEW_COMMENT)
         self.assertEqual(obj_comment.id, expected_comment.id)
         self.assertEqual(obj_comment.text, expected_comment.text)
 
 
-class FollowTest(TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        cls.user = User.objects.create_user(username='Guido')
-        cls.Noname_user = User.objects.create_user(username='Noname')
-        cls.test = User.objects.create_user(username='test1')
-        cls.group = Group.objects.create(
-            title='Тестовый заголовок',
-            slug='test-slug',
-            description='Тестовый текст',
-        )
-        Post.objects.create(
-            text='тестовый текст поля text',
-            author=cls.user,
-            group=cls.group
-        )
+class FollowTest(ConfTests, TestCase):
 
     def setUp(self):
         self.not_signed = Client()
-        self.not_signed.force_login(self.test)
+        self.not_signed.force_login(self.name_test1)
         self.authorized_client = Client()
-        self.authorized_client.force_login(self.Noname_user)
+        self.authorized_client.force_login(self.name_test2)
         self.guido = Client()
         self.guido.force_login(self.user)
         self.not_authorized = Client()
 
     def test_authorized_client_subscribe(self):
-        """Авторизованный пользователь может подписываться на других
-        пользователей и удалять их из подписок"""
+        """An authorized user can follow others
+         users and remove them from subscriptions"""
         number_of_subscriptions = Follow.objects.count()
         self.authorized_client.get(
             reverse('posts:profile_follow', kwargs={'username': self.user})
@@ -302,7 +252,7 @@ class FollowTest(TestCase):
         self.authorized_client.get(
             reverse(
                 'posts:profile_follow',
-                kwargs={'username': self.Noname_user})
+                kwargs={'username': self.name_test2})
         )
         self.not_authorized.get(
             reverse('posts:profile_follow', kwargs={'username': self.user})
@@ -322,7 +272,7 @@ class FollowTest(TestCase):
         response_before_not_signed = self.not_signed.get(
             reverse('posts:follow_index'))
         form_data = {
-            'text': 'Текст нового поста',
+            'text': self.TEXT_POST,
         }
         self.guido.post(
             reverse('posts:post_create'),

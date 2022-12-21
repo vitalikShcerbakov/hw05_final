@@ -4,23 +4,9 @@ from django.core.cache import cache
 from django.test import Client, TestCase
 
 from posts.models import Group, Post, User
+from .conftest import ConfTests
 
-
-class PostsURLTests(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.user = User.objects.create_user(username='auth')
-        cls.group = Group.objects.create(
-            title='Тестовый заголовок',
-            slug='test-slug',
-            description='Тестовый текст',
-        )
-        cls.post = Post.objects.create(
-            text='тестовый текст поля text',
-            author=cls.user,
-            group=cls.group,
-        )
+class PostsURLTests(ConfTests, TestCase):
 
     def setUp(self):
         cache.clear()
@@ -29,7 +15,7 @@ class PostsURLTests(TestCase):
         self.authorized_client.force_login(self.user)
 
     def test_home_url_exists_at_desired_location_anonymous(self):
-        """Список странциц доступных любому пользователю"""
+        """List of pages available to any user."""
         list_url_anonymous = {
             '/': HTTPStatus.OK,
             f'/group/{self.group.slug}/': HTTPStatus.OK,
@@ -45,7 +31,7 @@ class PostsURLTests(TestCase):
                 self.assertEqual(response.status_code, status)
 
     def test_home_url_exists_at_desired_location_anonymous(self):
-        """Список странциц доступных авторизованному пользователю"""
+        """List of pages available to an authorized user."""
         list_url_anonymous = {
             f'/posts/{self.post.pk}/edit/': HTTPStatus.OK,
             '/create/': HTTPStatus.OK,
@@ -57,7 +43,7 @@ class PostsURLTests(TestCase):
                 self.assertEqual(response.status_code, status)
 
     def test_urls_uses_correct_template_not_authorized(self):
-        """URL-адрес использует соответствующий шаблон."""
+        """The URL uses the appropriate pattern."""
         templates_url_names = {
             '/': 'posts/index.html',
             f'/group/{self.group.slug}/': 'posts/group_list.html',
@@ -70,7 +56,7 @@ class PostsURLTests(TestCase):
                 self.assertTemplateUsed(response, template)
 
     def test_urls_uses_correct_template_authorized(self):
-        """URL-адрес использует соответствующий шаблон."""
+        """The URL uses the appropriate pattern."""
         templates_url_names = {
             '/': 'posts/index.html',
             f'/group/{self.group.slug}/': 'posts/group_list.html',
@@ -85,7 +71,7 @@ class PostsURLTests(TestCase):
                 self.assertTemplateUsed(response, template)
 
     def test_create_url_redirect_anonymous1(self):
-        """Страница /create/ перенаправляет анонимного пользователя."""
+        """The /create/ page redirects an anonymous user."""
         response = self.client.get('/create/', follow=True)
         self.assertRedirects(
             response, ('/auth/login/?next=/create/'))
