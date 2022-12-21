@@ -2,13 +2,13 @@ import shutil
 import tempfile
 
 from django.conf import settings
-from django.test import TestCase, override_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 
 from posts.models import Comment, Group, Post, User
 
-
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
+
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class ConfTests(TestCase):
@@ -19,7 +19,7 @@ class ConfTests(TestCase):
     DESCRIPION_GROUP = 'Тестовое описание'
     TEXT_POST = 'тестовый текст поля text'
     EXPECTED_VALUE_POST = TEXT_POST[:15]
-    COUNT_POST = 20
+    COUNT_POST = 13
     NEW_COMMENT = 'new comment'
     COMMENT = 'text new comment'
 
@@ -53,19 +53,12 @@ class ConfTests(TestCase):
             content=cls.small_gif,
             content_type='image/gif'
         )
-        # cls.list_post = [Post.objects.create(
-        #     text='тестовый текст поля text',
-        #     author=cls.user,
-        #     group=cls.group,
-        #     image=cls.uploaded
-        # )for _ in range(cls.COUNT_POST)]
-
         cls.comment = Comment.objects.create(
             post=cls.post,
             author=cls.user,
             text=cls.COMMENT
         )
-    
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()

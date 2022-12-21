@@ -1,14 +1,9 @@
-import shutil
-import tempfile
-
-from django.conf import settings
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase, override_settings
+from django.test import Client, TestCase
 from django.urls import reverse
 
-from posts.models import Group, Post, User
-from .conftest import ConfTests
+from posts.models import Post
 
+from .conftest import ConfTests
 
 
 class PostCreateFormTests(ConfTests, TestCase):
@@ -30,7 +25,6 @@ class PostCreateFormTests(ConfTests, TestCase):
             data=form_data,
             follow=True
         )
-
         self.assertRedirects(response, reverse(
             'posts:profile', kwargs={'username': self.user}))
         self.assertEqual(Post.objects.count(), post_count + 1)

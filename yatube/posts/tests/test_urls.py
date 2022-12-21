@@ -3,14 +3,13 @@ from http import HTTPStatus
 from django.core.cache import cache
 from django.test import Client, TestCase
 
-from posts.models import Group, Post, User
 from .conftest import ConfTests
+
 
 class PostsURLTests(ConfTests, TestCase):
 
     def setUp(self):
         cache.clear()
-        self.user = User.objects.get(username='auth')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 

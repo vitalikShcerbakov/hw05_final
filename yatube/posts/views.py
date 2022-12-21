@@ -141,7 +141,7 @@ def profile_follow(request, username):
 def profile_unfollow(request, username):
     author = User.objects.get(username=username)
     # Понимаю что проверка так себе но умнее не чего не придумал...(
-    if Follow.objects.filter(author=author).filter(user=request.user).exists():
+    if Follow.objects.filter(author=author, user=request.user).exists():
         record = Follow.objects.filter(author=author).filter(user=request.user)
         record.delete()
     return redirect('posts:follow_index')

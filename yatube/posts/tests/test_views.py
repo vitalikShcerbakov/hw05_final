@@ -1,14 +1,11 @@
-import shutil
-import tempfile
-
 from django import forms
 from django.conf import settings
 from django.core.cache import cache
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase, override_settings
+from django.test import Client, TestCase
 from django.urls import reverse
 
-from posts.models import Comment, Follow, Group, Post, User
+from posts.models import Comment, Follow, Post, User
+
 from .conftest import ConfTests
 
 
@@ -17,21 +14,12 @@ class PostsPagesTests(ConfTests, TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        # cls.user = User.objects.create_user(username='Guido')
-        # cls.group = Group.objects.create(
-        #     title='Тестовый заголовок',
-        #     slug='test-slug',
-        #     description='Тестовый текст',
-        # )
-
         cls.list_post = [Post.objects.create(
-            text='тестовый текст поля text',
+            text=cls.TEXT_POST,
             author=cls.user,
             group=cls.group,
             image=cls.uploaded
         )for _ in range(cls.COUNT_POST)]
-
-
 
     def setUp(self):
         cache.clear()
@@ -152,31 +140,20 @@ class PostsPagesTests(ConfTests, TestCase):
 
 
 class PaginatorViewsTest(ConfTests, TestCase):
-    COUNT_POST = 13
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        #cls.user = User.objects.create_user(username='Guido')
-        # cls.group = Group.objects.create(
-        #     title='Тестовый заголовок',
-        #     slug='test-slug',
-        #     description='Тестовый текст',
-        # )
-        for i in range(cls.COUNT_POST):
-            Post.objects.create(
-                text='тестовый текст поля text',
-                author=cls.user,
-                group=cls.group,
-            )
 
     def setUp(self):
         cache.clear()
-        #self.user = User.objects.get(username='Guido')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
     def test_contains_records(self):
+        for _ in range(self.COUNT_POST):
+            Post.objects.create(
+                text=self.TEXT_POST,
+                author=self.user,
+                group=self.group,
+            )
+        count_post = Post.objects.all().count()
         templates_pages_names = {
             'posts:index': None,
             'posts:group_list': {'slug': f'{self.group.slug}'},
@@ -194,7 +171,7 @@ class PaginatorViewsTest(ConfTests, TestCase):
                 template_name, kwargs=kwargs) + '?page=2')
             self.assertEqual(
                 len(response.context['page_obj']),
-                self.COUNT_POST - settings.AMOUNT_OF_POSTS_TO_DISPLAY)
+                count_post - settings.AMOUNT_OF_POSTS_TO_DISPLAY)
 
 
 class CommentsTest(ConfTests, TestCase):
