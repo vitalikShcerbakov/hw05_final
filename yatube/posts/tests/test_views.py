@@ -145,6 +145,8 @@ class PaginatorViewsTest(ConfTests, TestCase):
         cache.clear()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        self.authorized_client_2 = Client()
+        self.authorized_client_2.force_login(self.name_test1)
 
     def test_contains_records(self):
         for _ in range(self.COUNT_POST):
@@ -154,24 +156,26 @@ class PaginatorViewsTest(ConfTests, TestCase):
                 group=self.group,
             )
         count_post = Post.objects.all().count()
+        # Subscribe to the author to check the paginator
+        self.authorized_client_2.get(
+            reverse('posts:profile_follow', kwargs={'username': self.user})
+        )
         templates_pages_names = {
             'posts:index': None,
+            'posts:follow_index': None,
             'posts:group_list': {'slug': f'{self.group.slug}'},
             'posts:profile': {'username': f'{self.user}'},
         }
+        pages_and_number_of_posts = {
+            '': settings.AMOUNT_OF_POSTS_TO_DISPLAY,
+            '?page=2': count_post - settings.AMOUNT_OF_POSTS_TO_DISPLAY
+        }
         for template_name, kwargs in templates_pages_names.items():
-            response = self.authorized_client.get(reverse(
-                template_name, kwargs=kwargs))
-            self.assertEqual(
-                len(response.context['page_obj']),
-                settings.AMOUNT_OF_POSTS_TO_DISPLAY)
-
-        for template_name, kwargs in templates_pages_names.items():
-            response = self.authorized_client.get(reverse(
-                template_name, kwargs=kwargs) + '?page=2')
-            self.assertEqual(
-                len(response.context['page_obj']),
-                count_post - settings.AMOUNT_OF_POSTS_TO_DISPLAY)
+            for url, number in pages_and_number_of_posts.items():
+                response = self.authorized_client_2.get(reverse(
+                    template_name, kwargs=kwargs) + url)
+                self.assertEqual(
+                    len(response.context['page_obj']), number)
 
 
 class CommentsTest(ConfTests, TestCase):
