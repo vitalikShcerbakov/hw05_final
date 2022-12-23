@@ -9,7 +9,7 @@ from .utils import get_paginator
 
 @cache_page(20, key_prefix='index_page')
 def index(request):
-    post_list = Post.objects.select_related().all()
+    post_list = Post.objects.select_related('author', 'group').all()
     page_obj = get_paginator(post_list, request)
     context = {
         'page_obj': page_obj,
@@ -92,9 +92,6 @@ def post_edit(request, post_id):
         post = form.save(commit=False)
         post.author = request.user
         post.save()
-        # Зачем здесь return?)
-        # Для перенаправления на cтраницу поста после сохранения
-        # Не пойму замечания... =(
         return redirect('posts:post_detail', post_id=post_id)
     return render(request, 'posts/create_post.html', {
         'form': form,
@@ -140,7 +137,6 @@ def profile_follow(request, username):
 @login_required
 def profile_unfollow(request, username):
     author = User.objects.get(username=username)
-    # Понимаю что проверка так себе но умнее не чего не придумал...(
     if Follow.objects.filter(author=author, user=request.user).exists():
         record = Follow.objects.filter(author=author).filter(user=request.user)
         record.delete()

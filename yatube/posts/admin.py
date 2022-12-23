@@ -24,6 +24,6 @@ class CommentAdmin(admin.ModelAdmin):
 
 
 @admin.register(Follow)
-class CommentAdmin(admin.ModelAdmin):
+class FollowAdmin(admin.ModelAdmin):
     list_display = ('pk', 'user', 'author')
     list_editable = ('user', 'author')
