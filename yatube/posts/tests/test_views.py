@@ -99,7 +99,7 @@ class PostsPagesTests(ConfTests, TestCase):
         self.assertEqual(one_post, expected_post)
         self.assertEqual(one_post.id, expected_post.id)
         self.assertEqual(one_post.image, expected_post.image)
-
+        breakpoint()
     def _test_forms(self, response):
         form_fields = {
             'text': forms.fields.CharField,
