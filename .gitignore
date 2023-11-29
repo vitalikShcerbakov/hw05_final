@@ -150,3 +150,10 @@ static/
 yatube/posts/static/
 yatube/media/
 yatube/tmp65ocucmo/
+
+
+ # игнорирует все файлы .md
+.md
+
+# не игнорирует файл README.md
+!README.md  
