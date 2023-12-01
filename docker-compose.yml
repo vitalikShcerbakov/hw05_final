@@ -1,0 +1,33 @@
+# Версия docker-compose
+version: '3'
+
+# Перечень volume
+volumes:
+  pg_data_mini_social_network:
+  static:
+
+# Перечень контейнеров
+services:
+  db:
+    image: postgres:13.10
+    # Файл (или список файлов) с переменными окружения
+    env_file: .env
+    # Какой volume подключить для этого контейнера
+    volumes:
+      - pg_data_mini_social_network:/var/lib/postgresql/data
+  backend:
+    # Из какого Dockerfile собирать образ для этого контейнера:
+    build: ./yatube/
+    env_file: .env
+    volumes:
+      - static:/backend_static
+    # Какие контейнеры нужно запустить до старта этого контейнера:
+    depends_on:
+      - db
+  # Добавляем новый контейнер: gateway.
+  gateway:
+    build: ./gateway/
+    volumes:
+      - static:/staticfiles/
+    ports:
+      - 8000:80 
